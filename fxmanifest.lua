@@ -7,9 +7,10 @@ description 'University System for Ventura Roleplay'
 version '1.0.0'
 
 shared_scripts { 
-	'config.lua',
-    '@ox_lib/init.lua'
+    '@ox_lib/init.lua',
+    'config.lua'
 }
+
 client_script 'client/main.lua'
 server_script 'server/server.lua'
 
