@@ -7,10 +7,28 @@ RegisterNetEvent('qb-university:enroll', function(professorIndex, subjectIndex)
     local subject = professor.subjects[subjectIndex]
     
     if Player.Functions.RemoveMoney('cash', subject.inscriptionFee, 'University Enrollment') then
+        TriggerClientEvent('qb-university:enrollSuccess', src, professorIndex, subjectIndex)
         TriggerClientEvent('QBCore:Notify', src, 'You have enrolled in ' .. subject.name, 'success')
-        TriggerClientEvent('qb-university:takeExam', src, professorIndex, subjectIndex)
     else
         TriggerClientEvent('QBCore:Notify', src, 'Not enough money for enrollment', 'error')
+    end
+end)
+
+RegisterNetEvent('qb-university:requestExam', function(professorIndex, subjectIndex)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    local professor = Config.Professors[professorIndex]
+    local subject = professor.subjects[subjectIndex]
+    local playerId = Player.PlayerData.citizenid
+
+    if enrolledSubjects[playerId] and enrolledSubjects[playerId][professorIndex] and enrolledSubjects[playerId][professorIndex][subjectIndex] then
+        if Player.Functions.RemoveMoney('cash', subject.examFee, 'University Exam') then
+            TriggerClientEvent('qb-university:takeExam', src, professorIndex, subjectIndex)
+        else
+            TriggerClientEvent('qb-university:examRequestFailed', src, 'Not enough money for the exam')
+        end
+    else
+        TriggerClientEvent('qb-university:examRequestFailed', src, 'You are not enrolled in this subject')
     end
 end)
 
