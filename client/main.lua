@@ -1,5 +1,7 @@
 local QBCore = exports['qb-core']:GetCoreObject()
+local enrolledSubjects = {}
 
+-- Function to load model
 local function loadModel(model)
     RequestModel(model)
     while not HasModelLoaded(model) do
@@ -7,20 +9,26 @@ local function loadModel(model)
     end
 end
 
+-- Spawn professors
 CreateThread(function()
     for index, professor in ipairs(Config.Professors) do
         local pedModel = GetHashKey(professor.ped)
         
+        -- Load the ped model
         loadModel(pedModel)
         
+        -- Create the ped
         local ped = CreatePed(4, pedModel, professor.coords.x, professor.coords.y, professor.coords.z, professor.heading, false, true)
         
+        -- Set ped properties
         FreezeEntityPosition(ped, true)
         SetEntityInvincible(ped, true)
         SetBlockingOfNonTemporaryEvents(ped, true)
         
+        -- Print debug message
         print("Spawned professor: " .. professor.name .. " at coordinates: " .. tostring(professor.coords))
         
+        -- Add target functionality using qb-target
         exports['qb-target']:AddTargetEntity(ped, {
             options = {
                 {
@@ -42,7 +50,18 @@ RegisterNetEvent('qb-university:openMenu', function(data)
     local elements = {}
 
     for i, subject in ipairs(professor.subjects) do
-        table.insert(elements, {label = subject.name, value = i})
+        table.insert(elements, {
+            label = "Enroll in " .. subject.name .. " ($" .. subject.inscriptionFee .. ")",
+            value = i,
+            action = "enroll"
+        })
+        
+        table.insert(elements, {
+            label = "Take Final Exam in " .. subject.name .. " ($" .. subject.examFee .. ")",
+            value = i,
+            action = "exam",
+            disabled = not enrolledSubjects[professorIndex] or not enrolledSubjects[professorIndex][i]
+        })
     end
 
     lib.registerContext({
@@ -50,8 +69,11 @@ RegisterNetEvent('qb-university:openMenu', function(data)
         title = professor.name,
         options = elements,
         onSelect = function(option)
-            local subject = professor.subjects[option.value]
-            TriggerServerEvent('qb-university:enroll', professorIndex, option.value)
+            if option.action == "enroll" then
+                TriggerServerEvent('qb-university:enroll', professorIndex, option.value)
+            elseif option.action == "exam" then
+                TriggerServerEvent('qb-university:requestExam', professorIndex, option.value)
+            end
         end
     })
 
@@ -61,16 +83,12 @@ end)
 RegisterNetEvent('qb-university:takeExam', function(professorIndex, subjectIndex)
     local professor = Config.Professors[professorIndex]
     local subject = professor.subjects[subjectIndex]
-    local exam = {
-        -- Define the exam questions and options here
-    }
-
-    table.insert(exam, {question = "What is 2 + 2?", options = {"3", "4", "5"}, correct = 2})
+    local exam = subject.examQuestions
 
     lib.registerContext({
         id = 'university_exam',
         title = 'Final Exam - ' .. subject.name,
-        options = exam,
+        options = {},
         onSelect = function(option)
             if option.value == exam.correct then
                 TriggerServerEvent('qb-university:passExam', professorIndex, subjectIndex)
@@ -80,5 +98,25 @@ RegisterNetEvent('qb-university:takeExam', function(professorIndex, subjectIndex
         end
     })
 
+    for _, question in ipairs(exam) do
+        table.insert(lib.contexts['university_exam'].options, {
+            label = question.question,
+            value = question.correct,
+            options = question.options
+        })
+    end
+
     lib.showContext('university_exam')
+end)
+
+RegisterNetEvent('qb-university:enrollSuccess', function(professorIndex, subjectIndex)
+    if not enrolledSubjects[professorIndex] then
+        enrolledSubjects[professorIndex] = {}
+    end
+    enrolledSubjects[professorIndex][subjectIndex] = true
+    QBCore.Functions.Notify("You have successfully enrolled in the subject.", "success")
+end)
+
+RegisterNetEvent('qb-university:examRequestFailed', function(message)
+    QBCore.Functions.Notify(message, "error")
 end)
