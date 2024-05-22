@@ -1,7 +1,6 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local enrolledSubjects = {}
 
--- Function to load model
 local function loadModel(model)
     RequestModel(model)
     while not HasModelLoaded(model) do
@@ -9,33 +8,27 @@ local function loadModel(model)
     end
 end
 
--- Spawn professors
 CreateThread(function()
     for index, professor in ipairs(Config.Professors) do
         local pedModel = GetHashKey(professor.ped)
         
-        -- Load the ped model
         loadModel(pedModel)
         
-        -- Create the ped
         local ped = CreatePed(4, pedModel, professor.coords.x, professor.coords.y, professor.coords.z, professor.heading, false, true)
         
-        -- Set ped properties
         FreezeEntityPosition(ped, true)
         SetEntityInvincible(ped, true)
         SetBlockingOfNonTemporaryEvents(ped, true)
         
-        -- Print debug message
         print("Spawned professor: " .. professor.name .. " at coordinates: " .. tostring(professor.coords))
         
-        -- Add target functionality using qb-target
         exports['qb-target']:AddTargetEntity(ped, {
             options = {
                 {
                     type = "client",
                     event = "qb-university:openMenu",
                     icon = "fas fa-graduation-cap",
-                    label = "Talk to " .. professor.name,
+                    label = "Habla con " .. professor.name,
                     professorIndex = index
                 }
             },
@@ -51,30 +44,35 @@ RegisterNetEvent('qb-university:openMenu', function(data)
 
     for i, subject in ipairs(professor.subjects) do
         table.insert(elements, {
-            label = "Enroll in " .. subject.name .. " ($" .. subject.inscriptionFee .. ")",
-            value = i,
-            action = "enroll"
+            title = "Inscribirse para " .. subject.name .. " ($" .. subject.inscriptionFee .. ")",
+            description = "Paga la matrícula para el curso de" .. subject.name,
+            action = function()
+                TriggerServerEvent('qb-university:enroll', professorIndex, i)
+            end
         })
-        
+
         table.insert(elements, {
-            label = "Take Final Exam in " .. subject.name .. " ($" .. subject.examFee .. ")",
-            value = i,
-            action = "exam",
-            disabled = not enrolledSubjects[professorIndex] or not enrolledSubjects[professorIndex][i]
+            title = "Tomar Exámen Final de " .. subject.name .. " ($" .. subject.examFee .. ")",
+            description = "Paga el costo del exámen final de " .. subject.name,
+            action = function()
+                TriggerServerEvent('qb-university:requestExam', professorIndex, i)
+            end,
+            disabled = not (enrolledSubjects[professorIndex] and enrolledSubjects[professorIndex][i])
         })
+    end
+
+    if #elements == 0 then
+        print("No elements added to the menu.")
+    else
+        for _, element in ipairs(elements) do
+            print("Menu element added: " .. element.title)
+        end
     end
 
     lib.registerContext({
         id = 'university_subjects',
         title = professor.name,
-        options = elements,
-        onSelect = function(option)
-            if option.action == "enroll" then
-                TriggerServerEvent('qb-university:enroll', professorIndex, option.value)
-            elseif option.action == "exam" then
-                TriggerServerEvent('qb-university:requestExam', professorIndex, option.value)
-            end
-        end
+        options = elements
     })
 
     lib.showContext('university_subjects')
