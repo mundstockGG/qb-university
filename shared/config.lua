@@ -11,7 +11,10 @@ Config.Professors = {
                 name = "Mathematics",
                 inscriptionFee = 100,
                 examFee = 50,
-                certificateItem = "math_certificate"
+                certificateItem = "math_certificate",
+                examQuestions = {
+                    { question = "What is 2 + 2?", options = {"3", "4", "5"}, correct = 2 }
+                }
             }
         }
     },
@@ -25,23 +28,11 @@ Config.Professors = {
                 name = "Physics",
                 inscriptionFee = 150,
                 examFee = 75,
-                certificateItem = "physics_certificate"
-            }
-        }
-    },
-    {
-        ped = 'a_m_m_socenlat_01',
-        coords = vector3(-1042.99, -2730.03, 20.17),
-        heading = 180.0,
-        name = "Professor Albert Einstein",
-        subjects = {
-            {
-                name = "Chemistry",
-                inscriptionFee = 200,
-                examFee = 100,
-                certificateItem = "chemistry_certificate"
+                certificateItem = "physics_certificate",
+                examQuestions = {
+                    { question = "What is the speed of light?", options = {"300,000 km/s", "150,000 km/s", "450,000 km/s"}, correct = 1 }
+                }
             }
         }
     }
-
 }
