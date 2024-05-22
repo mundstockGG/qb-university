@@ -1,4 +1,5 @@
 local QBCore = exports['qb-core']:GetCoreObject()
+local enrolledSubjects = {}
 
 RegisterNetEvent('qb-university:enroll', function(professorIndex, subjectIndex)
     local src = source
@@ -7,6 +8,13 @@ RegisterNetEvent('qb-university:enroll', function(professorIndex, subjectIndex)
     local subject = professor.subjects[subjectIndex]
     
     if Player.Functions.RemoveMoney('cash', subject.inscriptionFee, 'University Enrollment') then
+        if not enrolledSubjects[Player.PlayerData.citizenid] then
+            enrolledSubjects[Player.PlayerData.citizenid] = {}
+        end
+        if not enrolledSubjects[Player.PlayerData.citizenid][professorIndex] then
+            enrolledSubjects[Player.PlayerData.citizenid][professorIndex] = {}
+        end
+        enrolledSubjects[Player.PlayerData.citizenid][professorIndex][subjectIndex] = true
         TriggerClientEvent('qb-university:enrollSuccess', src, professorIndex, subjectIndex)
         TriggerClientEvent('QBCore:Notify', src, 'You have enrolled in ' .. subject.name, 'success')
     else
